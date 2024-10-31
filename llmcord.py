@@ -9,6 +9,8 @@ from typing import Literal, Optional
 import discord
 import httpx
 from openai import AsyncOpenAI
+import ollama
+import chromadb
 
 logging.basicConfig(
     level=logging.INFO,
@@ -29,9 +31,13 @@ EDIT_DELAY_SECONDS = 1
 
 MAX_MESSAGE_NODES = 100
 
+EMBEDDINGS_MODEL = "aroxima/gte-qwen2-1.5b-instruct:latest"
+chroma = chromadb.HttpClient(host="localhost", port=8000)
+collection = chroma.get_collection(name="psb")
+
 
 def get_config(filename="config.json"):
-    with open(filename, "r") as file:
+    with open(filename, "r", encoding='utf-8') as file:
         return {k: v for d in json.load(file).values() for k, v in d.items()}
 
 
@@ -111,9 +117,18 @@ async def on_message(new_msg):
             if curr_node.text == None:
                 good_attachments = {type: [att for att in curr_msg.attachments if att.content_type and type in att.content_type] for type in ALLOWED_FILE_TYPES}
 
+                # RAG
+                if curr_msg.content:
+                    query = curr_msg.content
+                    embeded_query = await ollama.embeddings(model=EMBEDDINGS_MODEL, prompt=query)['embedding']
+                    result = await collection.query(query_embeddings=[embeded_query],
+                                                    n_results=5)
+                    documents = result["documents"][0]
+
                 curr_node.text = "\n".join(
                     ([curr_msg.content] if curr_msg.content else [])
                     + [embed.description for embed in curr_msg.embeds if embed.description]
+                    + [document + "\n" for document in documents]
                     + [(await httpx_client.get(att.url)).text for att in good_attachments["text"]]
                 )
                 if curr_node.text.startswith(discord_client.user.mention):

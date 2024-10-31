@@ -5,3 +5,8 @@
 !*.md
 !*.py
 !config-example.json
+*.zip
+.env
+.venv
+venv/
+chroma_data/
