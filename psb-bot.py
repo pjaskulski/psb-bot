@@ -32,14 +32,27 @@ EDIT_DELAY_SECONDS = 1
 MAX_MESSAGE_NODES = 100
 
 EMBEDDINGS_MODEL = "aroxima/gte-qwen2-1.5b-instruct:latest"
-chroma = chromadb.HttpClient(host="localhost", port=8000)
-collection = chroma.get_collection(name="psb")
 
 
 def get_config(filename="config.json"):
+    """ reading configuration """
     with open(filename, "r", encoding='utf-8') as file:
         return {k: v for d in json.load(file).values() for k, v in d.items()}
 
+
+async def get_embeddings(text:str):
+    """ embeddings calculated from the prompt """
+    return ollama.embeddings(model=EMBEDDINGS_MODEL, prompt=text)['embedding']
+
+
+async def get_results(q_embeddings, num_of_results=5):
+    """ vector database search """
+    return collection.query(query_embeddings=[q_embeddings],
+                            n_results=num_of_results)
+
+
+chroma = chromadb.HttpClient(host="localhost", port=8000)
+collection = chroma.get_collection(name="psb")
 
 cfg = get_config()
 
@@ -120,9 +133,8 @@ async def on_message(new_msg):
                 # RAG
                 if curr_msg.content:
                     query = curr_msg.content
-                    embeded_query = ollama.embeddings(model=EMBEDDINGS_MODEL, prompt=query)['embedding']
-                    result = collection.query(query_embeddings=[embeded_query],
-                                                    n_results=5)
+                    embeded_query = await get_embeddings(text=query)
+                    result = await get_results(q_embeddings=embeded_query)
                     documents = result["documents"][0]
 
                 curr_node.text = "\n".join(
