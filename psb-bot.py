@@ -120,8 +120,8 @@ async def on_message(new_msg):
                 # RAG
                 if curr_msg.content:
                     query = curr_msg.content
-                    embeded_query = await ollama.embeddings(model=EMBEDDINGS_MODEL, prompt=query)['embedding']
-                    result = await collection.query(query_embeddings=[embeded_query],
+                    embeded_query = ollama.embeddings(model=EMBEDDINGS_MODEL, prompt=query)['embedding']
+                    result = collection.query(query_embeddings=[embeded_query],
                                                     n_results=5)
                     documents = result["documents"][0]
 
