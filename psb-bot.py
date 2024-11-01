@@ -138,8 +138,17 @@ async def on_message(new_msg):
                     embeded_query = await get_embeddings(text=query)
                     results = await get_results(q_embeddings=embeded_query)
                     documents = results["documents"][0]
+                    sources_list = []
                     for mt in results["metadatas"][0]:
-                        sources += f'"{mt["biogram"]}", {mt["book"]}, tom {mt["volume"]}, {mt["page"]} ({mt["publication_year"]})\n'
+                        t_source = f'"{mt["biogram"]}", {mt["book"]}, tom {mt["volume"]}, {mt["page"]} ({mt["publication_year"]})\n'
+                        if t_source not in sources_list:
+                            sources_list.append(t_source)
+                    if sources_list:
+                        s_counter = 0
+                        for source_item in sources_list:
+                            s_counter += 1
+                            sources += f'{s_counter}. {source_item}\n'
+                        sources = '\n\nPrzeanalizowane biogramy:\n\n' + sources
 
                 curr_node.text = "\n".join(
                     ([curr_msg.content] if curr_msg.content else [])
