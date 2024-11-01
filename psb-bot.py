@@ -49,7 +49,7 @@ async def get_results(q_embeddings, num_of_results=5):
     """ vector database search """
     return  collection.query(query_embeddings=[q_embeddings],
                              n_results=num_of_results,
-                             include=["metadatas"])
+                             include=["documents", "metadatas"])
 
 
 chroma = chromadb.HttpClient(host="localhost", port=8000)
@@ -135,7 +135,6 @@ async def on_message(new_msg):
                 # RAG
                 if curr_msg.content:
                     query = curr_msg.content
-                    logging.info(query)
                     embeded_query = await get_embeddings(text=query)
                     results = await get_results(q_embeddings=embeded_query)
                     documents = results["documents"][0]
