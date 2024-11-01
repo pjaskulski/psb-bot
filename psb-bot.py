@@ -49,7 +49,7 @@ async def get_results(q_embeddings, num_of_results=5):
     """ vector database search """
     return  collection.query(query_embeddings=[q_embeddings],
                              n_results=num_of_results,
-                             include=["documents", "metadatas"])
+                             include=["documents", "metadatas", "distances"])
 
 
 chroma = chromadb.HttpClient(host="localhost", port=8000)
@@ -137,10 +137,11 @@ async def on_message(new_msg):
                     query = curr_msg.content
                     embeded_query = await get_embeddings(text=query)
                     results = await get_results(q_embeddings=embeded_query)
+                    logging.info(results["distances"][0])
                     documents = results["documents"][0]
                     sources_list = []
                     for mt in results["metadatas"][0]:
-                        t_source = f'"{mt["biogram"]}", {mt["book"]}, tom {mt["volume"]}, {mt["page"]} ({mt["publication_year"]})\n'
+                        t_source = f'"{mt["biogram"]}", {mt["book"]}, tom {mt["volume"]}, {mt["page"]} ({mt["publication_year"]})'
                         if t_source not in sources_list:
                             sources_list.append(t_source)
                     if sources_list:
