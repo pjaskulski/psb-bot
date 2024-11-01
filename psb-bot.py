@@ -135,6 +135,7 @@ async def on_message(new_msg):
                 # RAG
                 if curr_msg.content:
                     query = curr_msg.content
+                    print(query)
                     embeded_query = await get_embeddings(text=query)
                     results = await get_results(q_embeddings=embeded_query)
                     documents = results["documents"][0]
