@@ -47,8 +47,9 @@ async def get_embeddings(text:str):
 
 async def get_results(q_embeddings, num_of_results=5):
     """ vector database search """
-    return collection.query(query_embeddings=[q_embeddings],
-                            n_results=num_of_results)
+    return  collection.query(query_embeddings=[q_embeddings],
+                             n_results=num_of_results,
+                             include=["metadatas"])
 
 
 chroma = chromadb.HttpClient(host="localhost", port=8000)
@@ -123,6 +124,7 @@ async def on_message(new_msg):
     messages = []
     user_warnings = set()
     curr_msg = new_msg
+    sources = "" # źródła znalezione przez RAG
     while curr_msg and len(messages) < max_messages:
         curr_node = msg_nodes.setdefault(curr_msg.id, MsgNode())
 
@@ -134,8 +136,10 @@ async def on_message(new_msg):
                 if curr_msg.content:
                     query = curr_msg.content
                     embeded_query = await get_embeddings(text=query)
-                    result = await get_results(q_embeddings=embeded_query)
-                    documents = result["documents"][0]
+                    results = await get_results(q_embeddings=embeded_query)
+                    documents = results["documents"][0]
+                    for mt in results["metadatas"][0]:
+                        sources += f'"{mt["biogram"]}", {mt["book"]}, tom {mt["volume"]}, {mt["page"]} ({mt["publication_year"]})\n'
 
                 curr_node.text = "\n".join(
                     ([curr_msg.content] if curr_msg.content else [])
@@ -259,7 +263,7 @@ async def on_message(new_msg):
                             while edit_task != None and not edit_task.done():
                                 await asyncio.sleep(0)
 
-                            embed.description = response_contents[-1] if is_final_edit else (response_contents[-1] + STREAMING_INDICATOR)
+                            embed.description = response_contents[-1] + sources if is_final_edit else (response_contents[-1] + STREAMING_INDICATOR)
                             embed.color = EMBED_COLOR_COMPLETE if msg_split_incoming or is_good_finish else EMBED_COLOR_INCOMPLETE
                             edit_task = asyncio.create_task(response_msgs[-1].edit(embed=embed))
                             last_task_time = dt.now().timestamp()
@@ -273,6 +277,9 @@ async def on_message(new_msg):
                 msg_nodes[response_msg.id] = MsgNode(next_msg=new_msg)
                 await msg_nodes[response_msg.id].lock.acquire()
                 response_msgs.append(response_msg)
+
+
+
     except:
         logging.exception("Error while generating response")
 
