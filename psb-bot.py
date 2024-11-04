@@ -136,7 +136,7 @@ async def on_message(new_msg):
                 if curr_msg.content:
                     query = curr_msg.content
                     embeded_query = await get_embeddings(text=query)
-                    results = await get_results(q_embeddings=embeded_query, num_of_results=3)
+                    results = await get_results(q_embeddings=embeded_query, num_of_results=4)
                     logging.info(results["distances"][0])
                     documents = results["documents"][0]
                     sources_list = []
