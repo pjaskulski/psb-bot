@@ -135,6 +135,10 @@ async def on_message(new_msg):
                 # RAG
                 if curr_msg.content:
                     query = curr_msg.content
+                    query = query.strip()
+                    if query.startswith('<'):
+                        pos = query.find('>')
+                        query = query[pos+1:].strip()
                     embeded_query = await get_embeddings(text=query)
                     results = await get_results(q_embeddings=embeded_query, num_of_results=5)
                     logging.info(results["distances"][0])
