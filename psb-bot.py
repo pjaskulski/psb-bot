@@ -145,7 +145,10 @@ async def on_message(new_msg):
                     documents = results["documents"][0]
                     sources_list = []
                     for mt in results["metadatas"][0]:
-                        t_source = f'"{mt["biogram"]}", {mt["book"]}, tom {mt["volume"]}, {mt["page"]} ({mt["publication_year"]})'
+                        if mt["book"] == "Strona internetowa PSB":
+                            t_source = f'"{mt["biogram"]}", {mt["book"]} ({mt["publication_year"]})'
+                        else:
+                            t_source = f'"{mt["biogram"]}", {mt["book"]}, tom {mt["volume"]}, {mt["page"]} ({mt["publication_year"]})'
                         if t_source not in sources_list:
                             sources_list.append(t_source)
                     if sources_list:
@@ -153,7 +156,7 @@ async def on_message(new_msg):
                         for source_item in sources_list:
                             s_counter += 1
                             sources += f'{s_counter}. {source_item}\n'
-                        sources = '\n\nPrzeanalizowane biogramy:\n\n' + sources
+                        sources = '\n\nPrzeanalizowane źródła:\n\n' + sources
 
                 curr_node.text = "\n".join(
                     ([curr_msg.content] if curr_msg.content else [])
@@ -276,6 +279,11 @@ async def on_message(new_msg):
                         if ready_to_edit or is_final_edit:
                             while edit_task != None and not edit_task.done():
                                 await asyncio.sleep(0)
+
+                            # jeżeli model nie może odpowiedzieć na pytanie na podstawie kontekstu
+                            # o podawanie listy źródeł nie jest potrzebne.
+                            if response_contents[-1] and 'niestety, nie mam informacji na ten temat' in response_contents[-1].lower():
+                                sources = ''
 
                             embed.description = response_contents[-1] + sources if is_final_edit else (response_contents[-1] + STREAMING_INDICATOR)
                             embed.color = EMBED_COLOR_COMPLETE if msg_split_incoming or is_good_finish else EMBED_COLOR_INCOMPLETE
